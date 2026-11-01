@@ -98,7 +98,7 @@
             font-size: 12px;
         }
 
-        /* Стили плеера */
+        /* Плеер */
         .player-container {
             position: relative;
         }
@@ -152,7 +152,7 @@
             margin-top: 10px;
         }
 
-        /* Стили чата */
+        /* Чат */
         .chat-box {
             height: 300px;
             border: 1px solid var(--border);
@@ -230,17 +230,19 @@
 
     // --- СТУДЕНТЫ ---
     async function loadStudents() {
-        const res = await fetch('/api/students');
-        const students = await res.json();
-        const list = document.getElementById('studentList');
-        list.innerHTML = '';
-        students.forEach(s => {
-            list.innerHTML += `
-                <li class="student-item">
-                    <span><b>${escapeHtml(s.name)}</b> — ${escapeHtml(s.group_name)} (${s.course курс})</span>
-                    <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
-                </li>`;
-        });
+        try {
+            const res = await fetch('/api/students');
+            const students = await res.json();
+            const list = document.getElementById('studentList');
+            list.innerHTML = '';
+            students.forEach(s => {
+                list.innerHTML += `
+                    <li class="student-item">
+                        <span><b>${escapeHtml(s.name)}</b> — ${escapeHtml(s.group_name)} (${s.course} курс)</span>
+                        <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
+                    </li>`;
+            });
+        } catch (e) { console.error("Ошибка загрузки студентов", e); }
     }
 
     async function addStudent() {
@@ -265,7 +267,7 @@
         loadStudents();
     }
 
-    // --- МУЗЫКАЛЬНЫЙ ПЛЕЕР ---
+    // --- ПЛЕЕР И ПОИСК ---
     let searchTimeout;
     async function handleSearchInput(query) {
         clearTimeout(searchTimeout);
@@ -276,7 +278,6 @@
         }
         searchTimeout = setTimeout(async () => {
             try {
-                // Подсказки из чата и Jamendo
                 const localRes = await fetch("/api/local-tracks");
                 const localTracks = await localRes.json();
                 const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
@@ -359,7 +360,7 @@
         }
     }
 
-    // --- ЧАТ И ФАЙЛЫ ---
+    // --- ЧАТ И СОКЕТЫ ---
     let uploadedFileCache = null;
 
     async function uploadFile() {
@@ -369,13 +370,17 @@
         formData.append('file', fileInput.files[0]);
 
         document.getElementById('fileStatus').textContent = 'Загрузка файла...';
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.fileUrl) {
-            uploadedFileCache = data;
-            document.getElementById('fileStatus').textContent = `Файл прикреплен: ${data.originalName}`;
-        } else {
-            document.getElementById('fileStatus').textContent = 'Ошибка загрузки файла';
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.fileUrl) {
+                uploadedFileCache = data;
+                document.getElementById('fileStatus').textContent = `Файл прикреплен: ${data.originalName}`;
+            } else {
+                document.getElementById('fileStatus').textContent = 'Ошибка загрузки';
+            }
+        } catch(e) {
+            document.getElementById('fileStatus').textContent = 'Ошибка сети при загрузке';
         }
     }
 
@@ -437,7 +442,6 @@
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Инициализация загрузки студентов при старте
     loadStudents();
 </script>
 

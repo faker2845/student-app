@@ -51,7 +51,7 @@ db.serialize(() => {
     )`);
 });
 
-// Настройка Multer для сохранения файлов
+// Настройка Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -62,7 +62,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- API ДЛЯ СТУДЕНТОВ ---
+// --- API СТУДЕНТОВ ---
 app.get('/api/students', (req, res) => {
     db.all("SELECT * FROM students", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -85,13 +85,10 @@ app.delete('/api/students/:id', (req, res) => {
     });
 });
 
-// --- API ДЛЯ МУЗЫКИ ИЗ ЧАТА (ДЛЯ ПЛЕЕРА) ---
+// --- API МУЗЫКИ ИЗ ЧАТА ---
 app.get('/api/local-tracks', (req, res) => {
     db.all("SELECT * FROM messages WHERE fileType = 'audio' ORDER BY id DESC", [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+        if (err) return res.status(500).json({ error: err.message });
         const tracks = rows.map(msg => ({
             name: msg.text || path.basename(msg.fileUrl),
             artist_name: `Чат (${msg.username})`,
@@ -101,11 +98,9 @@ app.get('/api/local-tracks', (req, res) => {
     });
 });
 
-// --- ЗАГРУЗКА ФАЙЛОВ В ЧАТ ---
+// --- ЗАГРУЗКА ФАЙЛОВ ---
 app.post('/api/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'Файл не загружен' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'Файл не загружен' });
     const fileUrl = `/uploads/${req.file.filename}`;
     let fileType = 'file';
     if (req.file.mimetype.startsWith('image/')) fileType = 'image';
@@ -115,9 +110,8 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ fileUrl, fileType, originalName: req.file.originalname });
 });
 
-// --- WEBSOCKET ДЛЯ ЧАТА ---
+// --- WEBSOCKET ЧАТА ---
 io.on('connection', (socket) => {
-    // Отправляем историю сообщений при подключении
     db.all("SELECT * FROM messages ORDER BY id DESC LIMIT 50", [], (err, rows) => {
         if (!err) {
             socket.emit('init_messages', rows.reverse());
@@ -128,10 +122,10 @@ io.on('connection', (socket) => {
         const { username, text, fileUrl, fileType } = data;
         db.run(
             "INSERT INTO messages (username, text, fileUrl, fileType) VALUES (?, ?, ?, ?)",
-            [username, text, fileUrl, fileType],
+            [username || 'Аноним', text, fileUrl, fileType],
             function(err) {
                 if (!err) {
-                    const savedMsg = { id: this.lastID, username, text, fileUrl, fileType, timestamp: new Date().toISOString() };
+                    const savedMsg = { id: this.lastID, username: username || 'Аноним', text, fileUrl, fileType, timestamp: new Date().toISOString() };
                     io.emit('chat_message', savedMsg);
                 }
             }
@@ -140,5 +134,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Сервер запущен: http://localhost:${PORT}`);
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
