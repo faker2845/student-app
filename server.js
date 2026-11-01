@@ -32,13 +32,13 @@ const db = new sqlite3.Database(dbFile, (err) => {
     }
 });
 
-// Создание таблиц
+// Создание таблиц (теперь вместо course используется specialty)
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS students (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         group_name TEXT NOT NULL,
-        course INTEGER NOT NULL
+        specialty TEXT NOT NULL
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS messages (
@@ -71,10 +71,19 @@ app.get('/api/students', (req, res) => {
 });
 
 app.post('/api/students', (req, res) => {
-    const { name, group_name, course } = req.body;
-    db.run("INSERT INTO students (name, group_name, course) VALUES (?, ?, ?)", [name, group_name, course], function(err) {
+    const { name, group_name, specialty } = req.body;
+    db.run("INSERT INTO students (name, group_name, specialty) VALUES (?, ?, ?)", [name, group_name, specialty], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, name, group_name, course });
+        res.json({ id: this.lastID, name, group_name, specialty });
+    });
+});
+
+// Редактирование студента
+app.put('/api/students/:id', (req, res) => {
+    const { name, group_name, specialty } = req.body;
+    db.run("UPDATE students SET name = ?, group_name = ?, specialty = ? WHERE id = ?", [name, group_name, specialty, req.params.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
     });
 });
 

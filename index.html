@@ -15,6 +15,7 @@
             --text-muted: #64748b;
             --border: #e2e8f0;
             --danger: #ef4444;
+            --warning: #f59e0b;
         }
 
         body {
@@ -59,7 +60,7 @@
 
         input {
             flex: 1;
-            min-width: 200px;
+            min-width: 180px;
         }
 
         button {
@@ -86,10 +87,23 @@
             align-items: center;
             padding: 10px 15px;
             border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         li.student-item:last-child {
             border-bottom: none;
+        }
+
+        .student-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .edit-btn {
+            background-color: var(--warning);
+            padding: 5px 10px;
+            font-size: 12px;
         }
 
         .delete-btn {
@@ -187,7 +201,7 @@
         <div class="form-group">
             <input type="text" id="name" placeholder="Имя студента">
             <input type="text" id="group" placeholder="Группа">
-            <input type="number" id="course" placeholder="Курс" style="max-width: 90px;">
+            <input type="text" id="specialty" placeholder="Специальность">
             <button onclick="addStudent()">Добавить</button>
         </div>
         <ul id="studentList"></ul>
@@ -238,8 +252,11 @@
             students.forEach(s => {
                 list.innerHTML += `
                     <li class="student-item">
-                        <span><b>${escapeHtml(s.name)}</b> — ${escapeHtml(s.group_name)} (${s.course} курс)</span>
-                        <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
+                        <span><b>[ID: ${s.id}]</b> ${escapeHtml(s.name)} — Группа: ${escapeHtml(s.group_name)} | Специальность: ${escapeHtml(s.specialty)}</span>
+                        <div class="student-actions">
+                            <button class="edit-btn" onclick="editStudent(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}', '${escapeHtml(s.specialty)}')">Изменить</button>
+                            <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
+                        </div>
                     </li>`;
             });
         } catch (e) { console.error("Ошибка загрузки студентов", e); }
@@ -248,17 +265,37 @@
     async function addStudent() {
         const name = document.getElementById('name').value;
         const group_name = document.getElementById('group').value;
-        const course = document.getElementById('course').value;
-        if (!name || !group_name || !course) return alert('Заполните все поля!');
+        const specialty = document.getElementById('specialty').value;
+        if (!name || !group_name || !specialty) return alert('Заполните все поля!');
 
         await fetch('/api/students', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, group_name, course })
+            body: JSON.stringify({ name, group_name, specialty })
         });
         document.getElementById('name').value = '';
         document.getElementById('group').value = '';
-        document.getElementById('course').value = '';
+        document.getElementById('specialty').value = '';
+        loadStudents();
+    }
+
+    async function editStudent(id, oldName, oldGroup, oldSpecialty) {
+        const name = prompt("Измените имя студента:", oldName);
+        if (name === null) return;
+        const group_name = prompt("Измените группу:", oldGroup);
+        if (group_name === null) return;
+        const specialty = prompt("Измените специальность:", oldSpecialty);
+        if (specialty === null) return;
+
+        if (!name.trim() || !group_name.trim() || !specialty.trim()) {
+            return alert('Поля не могут быть пустыми!');
+        }
+
+        await fetch(`/api/students/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, group_name, specialty })
+        });
         loadStudents();
     }
 
