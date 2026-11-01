@@ -3,400 +3,353 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система управления студентами и Музыка</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Student Management App</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg-color: #F3F4F6;
-            --card-bg: #FFFFFF;
-            --text-main: #1F2937;
-            --text-muted: #6B7280;
-            --border-color: #E5E7EB;
-            --danger: #EF4444;
-            --success: #10B981;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
+            margin: 0;
+            padding: 20px;
         }
 
         .container {
-            width: 100%;
-            max-width: 850px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            color: var(--primary);
         }
 
         .card {
             background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        .top-bar {
+        .form-group {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
-            gap: 12px;
         }
 
-        .user-info { display: flex; align-items: center; gap: 10px; }
-
-        h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; color: var(--text-main); }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: 80px 1fr 100px 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        @media (max-width: 640px) {
-            .form-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        input[type="text"], input[type="number"] {
-            width: 100%;
+        input, button {
             padding: 10px 14px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.2s ease;
+            font-size: 14px;
         }
 
-        input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        input {
+            flex: 1;
+            min-width: 200px;
         }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 600;
+        button {
+            background-color: var(--primary);
+            color: white;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-            gap: 8px;
+            font-weight: 600;
+            transition: background 0.2s;
         }
 
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-secondary { background-color: #E5E7EB; color: var(--text-main); }
-        .btn-secondary:hover { background-color: #D1D5DB; }
-        .btn-danger { background-color: #FEE2E2; color: var(--danger); }
-        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
-        .btn-outline:hover { background: #F9FAFB; }
+        button:hover {
+            background-color: var(--primary-hover);
+        }
 
-        .student-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
 
-        .student-item {
+        li.student-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 18px;
-            background: #F9FAFB;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .student-info { display: flex; align-items: center; gap: 12px; }
-        .student-id {
-            background: #EEF2FF;
-            color: var(--primary);
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+        li.student-item:last-child {
+            border-bottom: none;
         }
 
-        .pagination {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-color);
+        .delete-btn {
+            background-color: var(--danger);
+            padding: 5px 10px;
+            font-size: 12px;
         }
 
-        /* Плеер и поиск музыки с подсказками */
-        .music-player-box {
-            background: #FAFAFA;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 16px;
-            margin-top: 12px;
-        }
-        
-        .search-container {
+        /* Стили плеера */
+        .player-container {
             position: relative;
-            display: flex;
-            gap: 8px;
         }
 
-        /* Выпадающий список подсказок */
-        #suggestionsBox {
+        .suggestions {
             position: absolute;
             top: 100%;
             left: 0;
-            right: 90px; /* оставляем место под кнопку */
+            right: 0;
             background: white;
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            z-index: 100;
-            max-height: 150px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 200px;
             overflow-y: auto;
+            z-index: 10;
             display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .suggestion-item {
-            padding: 10px 14px;
+        .suggestions div {
+            padding: 10px;
             cursor: pointer;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #F3F4F6;
+            border-bottom: 1px solid var(--border);
         }
-        .suggestion-item:hover {
-            background: #EEF2FF;
-            color: var(--primary);
+
+        .suggestions div:hover {
+            background: #f1f5f9;
         }
 
         .track-list {
-            list-style: none;
-            max-height: 180px;
+            max-height: 250px;
             overflow-y: auto;
             margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
         }
+
         .track-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .track-item:hover {
+            background: #f8fafc;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Стили чата */
+        .chat-box {
+            height: 300px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        .chat-msg {
+            margin-bottom: 10px;
             padding: 8px 12px;
             background: white;
-            border: 1px solid var(--border-color);
             border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-            transition: background 0.1s;
-        }
-        .track-item:hover { background: #EEF2FF; }
-
-        /* Модальное окно чата */
-        #chatModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(4px);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            border: 1px solid var(--border);
         }
 
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            width: 500px;
-            max-width: 92%;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            padding: 16px 20px;
-            background: #F9FAFB;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #chatBox {
-            height: 350px;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: #F9FAFB;
-        }
-
-        .message {
-            background: white;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            max-width: 85%;
-        }
-
-        .message-header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
-        .message-author { font-weight: 600; font-size: 0.85rem; color: var(--primary); }
-        .message-time { font-size: 0.75rem; color: var(--text-muted); }
-        .message img, .message video, .message audio { max-width: 100%; border-radius: 8px; margin-top: 8px; }
-
-        .chat-input-panel {
-            padding: 14px 16px;
-            background: white;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-            align-items: center;
+        .chat-msg b {
+            color: var(--primary);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <h1>🎓 Управление студентами и Музыка</h1>
 
-    <!-- Верхняя панель: Имя + Чат -->
-    <div class="card top-bar">
-        <div class="user-info">
-            <span style="font-weight: 600; font-size: 0.9rem;">Имя:</span>
-            <input type="text" id="usernameInput" value="Студент" style="width: 150px;">
-            <button id="saveUserBtn" class="btn btn-outline" style="padding: 8px 12px;">Сохранить</button>
-        </div>
-        <button id="openChatBtn" class="btn btn-primary">💬 Чат студентов</button>
-    </div>
-
-    <!-- МУЗЫКАЛЬНЫЙ ПЛЕЕР С ПОИСКОМ И ПОДСКАЗКАМИ -->
+    <!-- Студенты -->
     <div class="card">
-        <h2>🎵 Музыкальный плеер</h2>
-        <div class="search-container">
-            <input type="text" id="musicSearchInput" placeholder="Введите название трека или жанр..." autocomplete="off">
-            <button id="searchMusicBtn" class="btn btn-primary">Искать</button>
-            <div id="suggestionsBox"></div>
+        <h2>Список студентов</h2>
+        <div class="form-group">
+            <input type="text" id="name" placeholder="Имя студента">
+            <input type="text" id="group" placeholder="Группа">
+            <input type="number" id="course" placeholder="Курс" style="max-width: 90px;">
+            <button onclick="addStudent()">Добавить</button>
         </div>
-
-        <div class="music-player-box">
-            <div id="nowPlaying" style="font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; color: var(--primary);">Выберите трек или воспользуйтесь поиском</div>
-            <audio id="audioPlayer" controls style="width: 100%;"></audio>
-            
-            <div style="margin-top: 12px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Результаты поиска:</div>
-            <ul id="trackList" class="track-list">
-                <li style="text-align: center; color: var(--text-muted); padding: 10px;">Введите название в поисковик выше</li>
-            </ul>
-        </div>
+        <ul id="studentList"></ul>
     </div>
 
-    <!-- Форма добавления студентов -->
+    <!-- Музыкальный плеер -->
+    <div class="card player-container">
+        <h2>🎵 Музыкальный плеер (Чаты + Jamendo)</h2>
+        <div class="form-group">
+            <div style="position: relative; flex: 1;">
+                <input type="text" id="searchInput" placeholder="Введите название трека или жанр..." oninput="handleSearchInput(this.value)">
+                <div id="suggestionsBox" class="suggestions"></div>
+            </div>
+            <button onclick="searchMusic(document.getElementById('searchInput').value)">Искать</button>
+        </div>
+        <p id="nowPlaying" style="font-weight: bold; color: var(--text-muted);">Сейчас ничего не играет</p>
+        <audio id="audioPlayer" controls></audio>
+        <ul id="trackList" class="track-list"></ul>
+    </div>
+
+    <!-- Чат -->
     <div class="card">
-        <h2 id="formTitle">Добавить студента</h2>
-        <div class="form-grid">
-            <input type="number" id="customId" placeholder="ID (авто)">
-            <input type="text" id="name" placeholder="ФИО студента">
-            <input type="number" id="age" placeholder="Возраст">
-            <input type="text" id="specialty" placeholder="Специальность">
+        <h2>💬 Чат студентов</h2>
+        <div class="form-group" style="margin-bottom: 10px;">
+            <input type="text" id="username" placeholder="Ваше имя" style="max-width: 150px;">
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <button id="addButton" class="btn btn-primary">Добавить студента</button>
-            <button id="cancelEditBtn" class="btn btn-secondary" style="display:none;">Отмена</button>
-            <span id="result" style="color: var(--success); font-weight: 500; font-size: 0.9rem;"></span>
+        <div id="chatBox" class="chat-box"></div>
+        <div class="form-group">
+            <input type="text" id="chatText" placeholder="Введите сообщение...">
+            <input type="file" id="chatFile" style="display: none;" onchange="uploadFile()">
+            <button onclick="document.getElementById('chatFile').click()">📎</button>
+            <button onclick="sendMessage()">Отправить</button>
         </div>
-    </div>
-
-    <!-- Список студентов -->
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2>Список студентов</h2>
-            <button id="loadButton" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem;">🔄 Обновить</button>
-        </div>
-        
-        <ul id="studentList" class="student-list"></ul>
-
-        <div class="pagination">
-            <button id="prevPageBtn" class="btn btn-outline">◀ Назад</button>
-            <span id="pageInfo" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Страница 1 из 1</span>
-            <button id="nextPageBtn" class="btn btn-outline">Вперед ▶</button>
-        </div>
-    </div>
-
-</div>
-
-<!-- Модальное окно чата -->
-<div id="chatModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Общий чат студентов</h3>
-            <button id="closeChatBtn" class="btn btn-outline" style="padding: 4px 8px;">✕</button>
-        </div>
-        
-        <div id="chatBox"></div>
-        
-        <div class="chat-input-panel">
-            <input type="file" id="mediaInput" accept="image/*,video/*,audio/*" style="display: none;">
-            <button id="attachBtn" class="btn btn-outline" style="padding: 10px;">📎</button>
-            <input type="text" id="messageInput" placeholder="Введите сообщение..." style="flex: 1;">
-            <button id="sendBtn" class="btn btn-primary">Отправить</button>
-        </div>
-        <div id="fileNameDisplay" style="font-size: 0.75rem; color: var(--text-muted); padding: 0 16px 8px 16px;"></div>
+        <div id="fileStatus" style="font-size: 12px; color: var(--text-muted);"></div>
     </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
-    let editingId = null;
-    let allStudents = [];
-    let currentPage = 1;
-    const pageSize = 5;
 
-    // --- МУЗЫКАЛЬНЫЙ ПОИСК С ПОДСКАЗКАМИ ---
-    const audioPlayer = document.getElementById("audioPlayer");
-    const trackList = document.getElementById("trackList");
-    const nowPlaying = document.getElementById("nowPlaying");
-    const musicSearchInput = document.getElementById("musicSearchInput");
-    const suggestionsBox = document.getElementById("suggestionsBox");
+    // --- СТУДЕНТЫ ---
+    async function loadStudents() {
+        const res = await fetch('/api/students');
+        const students = await res.json();
+        const list = document.getElementById('studentList');
+        list.innerHTML = '';
+        students.forEach(s => {
+            list.innerHTML += `
+                <li class="student-item">
+                    <span><b>${escapeHtml(s.name)}</b> — ${escapeHtml(s.group_name)} (${s.course курс})</span>
+                    <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
+                </li>`;
+        });
+    }
 
-    let searchTimeout = null;
+    async function addStudent() {
+        const name = document.getElementById('name').value;
+        const group_name = document.getElementById('group').value;
+        const course = document.getElementById('course').value;
+        if (!name || !group_name || !course) return alert('Заполните все поля!');
 
-    // Функция поиска треков
+        await fetch('/api/students', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, group_name, course })
+        });
+        document.getElementById('name').value = '';
+        document.getElementById('group').value = '';
+        document.getElementById('course').value = '';
+        loadStudents();
+    }
+
+    async function deleteStudent(id) {
+        await fetch(`/api/students/${id}`, { method: 'DELETE' });
+        loadStudents();
+    }
+
+    // --- МУЗЫКАЛЬНЫЙ ПЛЕЕР ---
+    let searchTimeout;
+    async function handleSearchInput(query) {
+        clearTimeout(searchTimeout);
+        const box = document.getElementById('suggestionsBox');
+        if (!query || query.length < 2) {
+            box.style.display = 'none';
+            return;
+        }
+        searchTimeout = setTimeout(async () => {
+            try {
+                // Подсказки из чата и Jamendo
+                const localRes = await fetch("/api/local-tracks");
+                const localTracks = await localRes.json();
+                const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
+
+                const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=5&search=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                const jamendoTracks = data.results || [];
+
+                box.innerHTML = '';
+                const all = [
+                    ...filteredLocal.map(t => ({ ...t, isLocal: true })),
+                    ...jamendoTracks.map(t => ({ name: t.name, artist_name: t.artist_name, audio: t.audio, isLocal: false }))
+                ];
+
+                if (all.length === 0) {
+                    box.style.display = 'none';
+                    return;
+                }
+
+                all.forEach(t => {
+                    const div = document.createElement('div');
+                    div.innerHTML = t.isLocal ? `💬 <b>${escapeHtml(t.name)}</b>` : `🎵 ${escapeHtml(t.name)} — <span style="color:gray;">${escapeHtml(t.artist_name)}</span>`;
+                    div.onclick = () => {
+                        document.getElementById('audioPlayer').src = t.audio;
+                        document.getElementById('audioPlayer').play();
+                        document.getElementById('nowPlaying').textContent = `Сейчас играет: ${t.name} — ${t.artist_name}`;
+                        box.style.display = 'none';
+                        document.getElementById('searchInput').value = t.name;
+                    };
+                    box.appendChild(div);
+                });
+                box.style.display = 'block';
+            } catch (e) { console.error(e); }
+        }, 300);
+    }
+
     async function searchMusic(query) {
         if (!query) return;
-        suggestionsBox.style.display = "none";
+        document.getElementById('suggestionsBox').style.display = "none";
+        const trackList = document.getElementById('trackList');
         trackList.innerHTML = `<li style="text-align: center; color: var(--text-muted); padding: 10px;">Ищем музыку...</li>`;
         
         try {
-            const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=10&search=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            
+            const localRes = await fetch("/api/local-tracks");
+            const localTracks = await localRes.json();
+            const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase()) || t.artist_name.toLowerCase().includes(query.toLowerCase()));
+
+            const jamendoRes = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=10&search=${encodeURIComponent(query)}`);
+            const jamendoData = await jamendoRes.json();
+            const jamendoTracks = jamendoData.results || [];
+
+            const allFoundTracks = [
+                ...filteredLocal.map(t => ({ ...t, isLocal: true })),
+                ...jamendoTracks.map(t => ({ name: t.name, artist_name: t.artist_name, audio: t.audio, isLocal: false }))
+            ];
+
             trackList.innerHTML = "";
-            if (!data.results || data.results.length === 0) {
+            if (allFoundTracks.length === 0) {
                 trackList.innerHTML = `<li style="text-align: center; color: var(--text-muted); padding: 10px;">Ничего не найдено</li>`;
                 return;
             }
 
-            data.results.forEach(track => {
+            allFoundTracks.forEach(track => {
                 const li = document.createElement("li");
                 li.className = "track-item";
-                li.innerHTML = `<span>🎵 <b>${escapeHtml(track.name)}</b> — <span style="color:var(--text-muted);">${escapeHtml(track.artist_name)}</span></span> <span>▶ Слушать</span>`;
+                const badge = track.isLocal ? "💬 [Из чата]" : "🎵";
+                li.innerHTML = `<span>${badge} <b>${escapeHtml(track.name)}</b> — <span style="color:var(--text-muted);">${escapeHtml(track.artist_name)}</span></span> <span>▶ Слушать</span>`;
                 
                 li.onclick = () => {
+                    const audioPlayer = document.getElementById('audioPlayer');
                     audioPlayer.src = track.audio;
                     audioPlayer.play();
-                    nowPlaying.textContent = `Сейчас играет: ${track.name} — ${track.artist_name}`;
+                    document.getElementById('nowPlaying').textContent = `Сейчас играет: ${track.name} — ${track.artist_name}`;
                 };
 
                 trackList.appendChild(li);
@@ -406,254 +359,87 @@
         }
     }
 
-    // Живой ввод с подсказками (автодополнение)
-    musicSearchInput.oninput = (e) => {
-        const query = e.target.value.trim();
-        clearTimeout(searchTimeout);
+    // --- ЧАТ И ФАЙЛЫ ---
+    let uploadedFileCache = null;
 
-        if (query.length < 2) {
-            suggestionsBox.style.display = "none";
-            return;
-        }
+    async function uploadFile() {
+        const fileInput = document.getElementById('chatFile');
+        if (fileInput.files.length === 0) return;
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
 
-        // Задержка (дебаунс), чтобы не делать лишних запросов при каждом символе
-        searchTimeout = setTimeout(async () => {
-            try {
-                const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=5&search=${encodeURIComponent(query)}`);
-                const data = await res.json();
-
-                suggestionsBox.innerHTML = "";
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach(track => {
-                        const div = document.createElement("div");
-                        div.className = "suggestion-item";
-                        div.textContent = `${track.name} — ${track.artist_name}`;
-                        
-                        // При клике на подсказку подставляем текст и сразу ищем
-                        div.onclick = () => {
-                            musicSearchInput.value = `${track.name} — ${track.artist_name}`;
-                            suggestionsBox.style.display = "none";
-                            searchMusic(track.name);
-                        };
-                        suggestionsBox.appendChild(div);
-                    });
-                    suggestionsBox.style.display = "block";
-                } else {
-                    suggestionsBox.style.display = "none";
-                }
-            } catch (err) {
-                suggestionsBox.style.display = "none";
-            }
-        }, 300);
-    };
-
-    // Скрывать подсказки при клике в другое место
-    document.onclick = (e) => {
-        if (!e.target.closest('.search-container')) {
-            suggestionsBox.style.display = "none";
-        }
-    };
-
-    document.getElementById("searchMusicBtn").onclick = () => {
-        searchMusic(musicSearchInput.value.trim());
-    };
-
-    musicSearchInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            suggestionsBox.style.display = "none";
-            searchMusic(musicSearchInput.value.trim());
-        }
-    };
-
-
-    // Модальное окно чата
-    const chatModal = document.getElementById("chatModal");
-    document.getElementById("openChatBtn").onclick = () => chatModal.style.display = "flex";
-    document.getElementById("closeChatBtn").onclick = () => chatModal.style.display = "none";
-    window.onclick = (e) => { if (e.target === chatModal) chatModal.style.display = "none"; };
-
-    // Имя пользователя
-    const usernameInput = document.getElementById("usernameInput");
-    if (localStorage.getItem("chatUsername")) usernameInput.value = localStorage.getItem("chatUsername");
-    document.getElementById("saveUserBtn").onclick = () => {
-        localStorage.setItem("chatUsername", usernameInput.value);
-        alert("Имя сохранено!");
-    };
-
-    // Загрузка студентов
-    async function loadStudents() {
-        const res = await fetch("/api/students");
-        allStudents = await res.json();
-        renderPage();
-    }
-
-    function renderPage() {
-        const list = document.getElementById("studentList");
-        list.innerHTML = "";
-
-        const totalPages = Math.ceil(allStudents.length / pageSize) || 1;
-        if (currentPage > totalPages) currentPage = totalPages;
-        if (currentPage < 1) currentPage = 1;
-
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageStudents = allStudents.slice(startIndex, startIndex + pageSize);
-
-        if (pageStudents.length === 0) {
-            list.innerHTML = `<li style="text-align: center; color: var(--text-muted); padding: 20px;">Студенты пока не добавлены</li>`;
-        } else {
-            pageStudents.forEach(s => {
-                const li = document.createElement("li");
-                li.className = "student-item";
-                
-                li.innerHTML = `
-                    <div class="student-info">
-                        <span class="student-id">ID: ${s.id}</span>
-                        <div>
-                            <div style="font-weight: 600;">${escapeHtml(s.name)}</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted);">${s.age} лет • Специальность: ${escapeHtml(s.specialty)}</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-outline edit-btn" style="padding: 6px 12px; font-size: 0.85rem;">Изменить</button>
-                        <button class="btn btn-danger del-btn" style="padding: 6px 12px; font-size: 0.85rem;">Удалить</button>
-                    </div>
-                `;
-
-                li.querySelector(".edit-btn").onclick = () => {
-                    editingId = s.id;
-                    document.getElementById("customId").value = s.id;
-                    document.getElementById("customId").disabled = true;
-                    document.getElementById("name").value = s.name;
-                    document.getElementById("age").value = s.age;
-                    document.getElementById("specialty").value = s.specialty;
-                    document.getElementById("formTitle").textContent = `Редактировать студента (#${s.id})`;
-                    document.getElementById("addButton").textContent = "Сохранить";
-                    document.getElementById("cancelEditBtn").style.display = "inline-flex";
-                };
-
-                li.querySelector(".del-btn").onclick = async () => {
-                    await fetch("/api/students/" + s.id, { method: "DELETE" });
-                    loadStudents();
-                };
-
-                list.appendChild(li);
-            });
-        }
-
-        document.getElementById("pageInfo").textContent = `Страница ${currentPage} из ${totalPages}`;
-        document.getElementById("prevPageBtn").disabled = currentPage === 1;
-        document.getElementById("nextPageBtn").disabled = currentPage === totalPages || totalPages === 0;
-    }
-
-    document.getElementById("prevPageBtn").onclick = () => { if (currentPage > 1) { currentPage--; renderPage(); } };
-    document.getElementById("nextPageBtn").onclick = () => { if (currentPage < Math.ceil(allStudents.length / pageSize)) { currentPage++; renderPage(); } };
-    document.getElementById("loadButton").onclick = loadStudents;
-
-    document.getElementById("cancelEditBtn").onclick = () => {
-        editingId = null;
-        document.getElementById("customId").value = "";
-        document.getElementById("customId").disabled = false;
-        document.getElementById("name").value = "";
-        document.getElementById("age").value = "";
-        document.getElementById("specialty").value = "";
-        document.getElementById("formTitle").textContent = "Добавить студента";
-        document.getElementById("addButton").textContent = "Добавить студента";
-        document.getElementById("cancelEditBtn").style.display = "none";
-    };
-
-    document.getElementById("addButton").onclick = async () => {
-        const customId = document.getElementById("customId").value;
-        const name = document.getElementById("name").value;
-        const age = document.getElementById("age").value;
-        const specialty = document.getElementById("specialty").value;
-
-        if (!name) { alert("Введите имя студента!"); return; }
-
-        let url = "/api/students", method = "POST";
-        let bodyData = { id: customId ? Number(customId) : null, name, age: Number(age), specialty };
-
-        if (editingId !== null) {
-            url = "/api/students/" + editingId;
-            method = "PUT";
-            bodyData = { name, age: Number(age), specialty };
-        }
-
-        const res = await fetch(url, {
-            method, headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bodyData)
-        });
+        document.getElementById('fileStatus').textContent = 'Загрузка файла...';
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
-        if (!res.ok) { alert(data.error); return; }
-
-        document.getElementById("result").textContent = data.message;
-        setTimeout(() => document.getElementById("result").textContent = "", 3000);
-        document.getElementById("cancelEditBtn").click();
-        loadStudents();
-    };
-
-    // Чат
-    const chatBox = document.getElementById("chatBox");
-    const messageInput = document.getElementById("messageInput");
-    const mediaInput = document.getElementById("mediaInput");
-    let selectedFile = null;
-
-    document.getElementById("attachBtn").onclick = () => mediaInput.click();
-    mediaInput.onchange = (e) => {
-        selectedFile = e.target.files[0];
-        document.getElementById("fileNameDisplay").textContent = selectedFile ? "Файл: " + selectedFile.name : "";
-    };
-
-    function appendMessage(data) {
-        const div = document.createElement("div");
-        div.className = "message";
-        
-        let mediaHtml = "";
         if (data.fileUrl) {
-            if (data.fileType === 'image') mediaHtml = `<img src="${data.fileUrl}">`;
-            else if (data.fileType === 'video') mediaHtml = `<video src="${data.fileUrl}" controls></video>`;
-            else if (data.fileType === 'audio') mediaHtml = `<audio src="${data.fileUrl}" controls></audio>`;
-            else mediaHtml = `<a href="${data.fileUrl}" target="_blank" style="color: var(--primary);">Скачать файл</a>`;
+            uploadedFileCache = data;
+            document.getElementById('fileStatus').textContent = `Файл прикреплен: ${data.originalName}`;
+        } else {
+            document.getElementById('fileStatus').textContent = 'Ошибка загрузки файла';
         }
-
-        div.innerHTML = `
-            <div class="message-header">
-                <span class="message-author">${escapeHtml(data.username)}</span>
-                <span class="message-time">${data.time || ''}</span>
-            </div>
-            <div>${escapeHtml(data.text || '')}</div>
-            ${mediaHtml}
-        `;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    socket.on('loadHistory', (messages) => { chatBox.innerHTML = ""; messages.forEach(appendMessage); });
-    socket.on('chatMessage', appendMessage);
+    function sendMessage() {
+        const username = document.getElementById('username').value.trim() || 'Аноним';
+        const text = document.getElementById('chatText').value.trim();
+        
+        if (!text && !uploadedFileCache) return;
 
-    document.getElementById("sendBtn").onclick = async () => {
-        const text = messageInput.value.trim();
-        const username = usernameInput.value.trim() || "Студент";
-        if (!text && !selectedFile) return;
+        const messageData = {
+            username,
+            text: text || (uploadedFileCache ? uploadedFileCache.originalName : ''),
+            fileUrl: uploadedFileCache ? uploadedFileCache.fileUrl : null,
+            fileType: uploadedFileCache ? uploadedFileCache.fileType : null
+        };
 
-        let fileUrl = null, fileType = null;
-        if (selectedFile) {
-            const formData = new FormData();
-            formData.append("mediaFile", selectedFile);
-            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-            const uploadData = await uploadRes.json();
-            if (uploadRes.ok) { fileUrl = uploadData.fileUrl; fileType = uploadData.fileType; }
-            else { alert("Ошибка загрузки"); return; }
+        socket.emit('chat_message', messageData);
+
+        document.getElementById('chatText').value = '';
+        document.getElementById('chatFile').value = '';
+        uploadedFileCache = null;
+        document.getElementById('fileStatus').textContent = '';
+    }
+
+    socket.on('init_messages', (messages) => {
+        const box = document.getElementById('chatBox');
+        box.innerHTML = '';
+        messages.forEach(appendMessage);
+        box.scrollTop = box.scrollHeight;
+    });
+
+    socket.on('chat_message', (msg) => {
+        appendMessage(msg);
+        const box = document.getElementById('chatBox');
+        box.scrollTop = box.scrollHeight;
+    });
+
+    function appendMessage(msg) {
+        const box = document.getElementById('chatBox');
+        let content = `<div class="chat-msg"><b>${escapeHtml(msg.username)}:</b> ${escapeHtml(msg.text || '')}`;
+        
+        if (msg.fileUrl) {
+            if (msg.fileType === 'image') {
+                content += `<br><img src="${msg.fileUrl}" style="max-width: 200px; border-radius: 6px; margin-top: 5px;">`;
+            } else if (msg.fileType === 'audio') {
+                content += `<br><audio controls src="${msg.fileUrl}" style="width: 100%; margin-top: 5px;"></audio>`;
+            } else if (msg.fileType === 'video') {
+                content += `<br><video controls src="${msg.fileUrl}" style="max-width: 250px; border-radius: 6px; margin-top: 5px;"></video>`;
+            } else {
+                content += `<br><a href="${msg.fileUrl}" target="_blank">📄 Скачать файл</a>`;
+            }
         }
+        content += `</div>`;
+        box.innerHTML += content;
+    }
 
-        socket.emit('chatMessage', { username, text, fileUrl, fileType });
-        messageInput.value = ""; selectedFile, selectedFile = null; mediaInput.value = "";
-        document.getElementById("fileNameDisplay").textContent = "";
-    };
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
 
-    messageInput.onkeypress = (e) => { if (e.key === 'Enter') document.getElementById("sendBtn").click(); };
-    function escapeHtml(text) { return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
-
+    // Инициализация загрузки студентов при старте
     loadStudents();
 </script>
+
 </body>
 </html>
