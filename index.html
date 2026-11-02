@@ -193,21 +193,9 @@
 <body>
 
 <div class="container">
-    <h1>🎓 Управление студентами и Музыка</h1>
+    <h1>🎵 Музыкальный плеер и Управление студентами</h1>
 
-    <!-- Студенты -->
-    <div class="card">
-        <h2>Список студентов</h2>
-        <div class="form-group">
-            <input type="text" id="name" placeholder="Имя студента">
-            <input type="text" id="group" placeholder="Группа">
-            <input type="text" id="specialty" placeholder="Специальность">
-            <button onclick="addStudent()">Добавить</button>
-        </div>
-        <ul id="studentList"></ul>
-    </div>
-
-    <!-- Музыкальный плеер -->
+    <!-- 1. Музыкальный плеер (теперь сверху) -->
     <div class="card player-container">
         <h2>🎵 Музыкальный плеер (Чаты + Jamendo)</h2>
         <div class="form-group">
@@ -222,7 +210,7 @@
         <ul id="trackList" class="track-list"></ul>
     </div>
 
-    <!-- Чат -->
+    <!-- 2. Чат студентов (в середине) -->
     <div class="card">
         <h2>💬 Чат студентов</h2>
         <div class="form-group" style="margin-bottom: 10px;">
@@ -236,6 +224,18 @@
             <button onclick="sendMessage()">Отправить</button>
         </div>
         <div id="fileStatus" style="font-size: 12px; color: var(--text-muted);"></div>
+    </div>
+
+    <!-- 3. Список студентов (внизу) -->
+    <div class="card">
+        <h2>🎓 Список студентов</h2>
+        <div class="form-group">
+            <input type="text" id="name" placeholder="Имя студента">
+            <input type="text" id="group" placeholder="Группа">
+            <input type="text" id="specialty" placeholder="Специальность">
+            <button onclick="addStudent()">Добавить</button>
+        </div>
+        <ul id="studentList"></ul>
     </div>
 </div>
 

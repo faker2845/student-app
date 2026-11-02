@@ -32,10 +32,10 @@ const db = new sqlite3.Database(dbFile, (err) => {
     }
 });
 
-// Создание таблиц (теперь вместо course используется specialty)
+// Создание таблиц (id без AUTOINCREMENT, чтобы можно было вручную занимать свободные места)
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         group_name TEXT NOT NULL,
         specialty TEXT NOT NULL
@@ -64,17 +64,33 @@ const upload = multer({ storage });
 
 // --- API СТУДЕНТОВ ---
 app.get('/api/students', (req, res) => {
-    db.all("SELECT * FROM students", [], (err, rows) => {
+    db.all("SELECT * FROM students ORDER BY id ASC", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
+// Добавление студента с заполнением наименьшего свободного ID
 app.post('/api/students', (req, res) => {
     const { name, group_name, specialty } = req.body;
-    db.run("INSERT INTO students (name, group_name, specialty) VALUES (?, ?, ?)", [name, group_name, specialty], function(err) {
+    
+    db.all("SELECT id FROM students ORDER BY id ASC", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, name, group_name, specialty });
+
+        // Ищем наименьший свободный ID
+        let nextId = 1;
+        for (let row of rows) {
+            if (row.id === nextId) {
+                nextId++;
+            } else {
+                break;
+            }
+        }
+
+        db.run("INSERT INTO students (id, name, group_name, specialty) VALUES (?, ?, ?, ?)", [nextId, name, group_name, specialty], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ id: nextId, name, group_name, specialty });
+        });
     });
 });
 
