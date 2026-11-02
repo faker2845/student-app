@@ -315,7 +315,7 @@
             students.forEach(s => {
                 list.innerHTML += `
                     <li class="student-item">
-                        <span><b>[ID: ${s.id}]</b>${escapeHtml(s.name)} — Группа: ${escapeHtml(s.group_name)} \vert{} Специальность: ${escapeHtml(s.specialty)}</span>
+                        <span><b>[ID: ${s.id}]</b> ${escapeHtml(s.name)} — Группа: ${escapeHtml(s.group_name)} | Специальность: ${escapeHtml(s.specialty)}</span>
                         <div class="student-actions">
                             <button class="edit-btn" onclick="editStudent(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.group_name)}', '${escapeHtml(s.specialty)}')">Изменить</button>
                             <button class="delete-btn" onclick="deleteStudent(${s.id})">Удалить</button>
@@ -363,7 +363,26 @@
     }
 
     async function deleteStudent(id) {
-        await fetch(`/api/students/${id}`, { method: 'DELETE' }); loadStudents(); }  // --- ПЛЕЕР И ПОИСК --- let searchTimeout; async function handleSearchInput(query) { clearTimeout(searchTimeout); const box = document.getElementById('suggestionsBox'); if (!query \vert{}\vert{} query.length < 2) { box.style.display = 'none'; return; } searchTimeout = setTimeout(async () => { try { const localRes = await fetch("/api/local-tracks"); const localTracks = await localRes.json(); const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase())).slice(0, 3);  const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=5&search=${encodeURIComponent(query)}`);
+        await fetch(`/api/students/${id}`, { method: 'DELETE' });
+        loadStudents();
+    }
+
+    // --- ПЛЕЕР И ПОИСК ---
+    let searchTimeout;
+    async function handleSearchInput(query) {
+        clearTimeout(searchTimeout);
+        const box = document.getElementById('suggestionsBox');
+        if (!query || query.length < 2) {
+            box.style.display = 'none';
+            return;
+        }
+        searchTimeout = setTimeout(async () => {
+            try {
+                const localRes = await fetch("/api/local-tracks");
+                const localTracks = await localRes.json();
+                const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase())).slice(0, 3);
+
+                const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=5&search=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 const jamendoTracks = data.results || [];
 
@@ -384,7 +403,7 @@
                     div.onclick = () => {
                         document.getElementById('audioPlayer').src = t.audio;
                         document.getElementById('audioPlayer').play();
-                        document.getElementById('nowPlaying').textContent = `Сейчас играет: ${t.name} —${t.artist_name}`;
+                        document.getElementById('nowPlaying').textContent = `Сейчас играет: ${t.name} — ${t.artist_name}`;
                         box.style.display = 'none';
                         document.getElementById('searchInput').value = t.name;
                     };
@@ -399,4 +418,132 @@
         if (!query) return;
         document.getElementById('suggestionsBox').style.display = "none";
         const trackList = document.getElementById('trackList');
-        trackList.innerHTML = `<li style="text-align: center; color: var(--
+        trackList.innerHTML = `<li style="text-align: center; color: var(--text-muted); padding: 10px;">Ищем музыку...</li>`;
+        
+        try {
+            const localRes = await fetch("/api/local-tracks");
+            const localTracks = await localRes.json();
+            const filteredLocal = localTracks.filter(t => t.name.toLowerCase().includes(query.toLowerCase()) || t.artist_name.toLowerCase().includes(query.toLowerCase()));
+
+            const jamendoRes = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=599eed81&format=json&limit=10&search=${encodeURIComponent(query)}`);
+            const jamendoData = await jamendoRes.json();
+            const jamendoTracks = jamendoData.results || [];
+
+            const allFoundTracks = [
+                ...filteredLocal.map(t => ({ ...t, isLocal: true })),
+                ...jamendoTracks.map(t => ({ name: t.name, artist_name: t.artist_name, audio: t.audio, isLocal: false }))
+            ];
+
+            trackList.innerHTML = "";
+            if (allFoundTracks.length === 0) {
+                trackList.innerHTML = `<li style="text-align: center; color: var(--text-muted); padding: 10px;">Ничего не найдено</li>`;
+                return;
+            }
+
+            allFoundTracks.forEach(track => {
+                const li = document.createElement("li");
+                li.className = "track-item";
+                const badge = track.isLocal ? "💬 [Из чата]" : "🎵";
+                li.innerHTML = `<span>${badge} <b>${escapeHtml(track.name)}</b> — <span style="color:var(--text-muted);">${escapeHtml(track.artist_name)}</span></span> <span>▶ Слушать</span>`;
+                
+                li.onclick = () => {
+                    const audioPlayer = document.getElementById('audioPlayer');
+                    audioPlayer.src = track.audio;
+                    audioPlayer.play();
+                    document.getElementById('nowPlaying').textContent = `Сейчас играет: ${track.name} — ${track.artist_name}`;
+                };
+
+                trackList.appendChild(li);
+            });
+        } catch (err) {
+            trackList.innerHTML = `<li style="text-align: center; color: var(--danger); padding: 10px;">Ошибка поиска музыки</li>`;
+        }
+    }
+
+    // --- ЧАТ И СОКЕТЫ ---
+    let uploadedFileCache = null;
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('chatFile');
+        if (fileInput.files.length === 0) return;
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        document.getElementById('fileStatus').textContent = 'Загрузка файла...';
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.fileUrl) {
+                uploadedFileCache = data;
+                document.getElementById('fileStatus').textContent = `Файл прикреплен: ${data.originalName}`;
+            } else {
+                document.getElementById('fileStatus').textContent = 'Ошибка загрузки';
+            }
+        } catch(e) {
+            document.getElementById('fileStatus').textContent = 'Ошибка сети при загрузке';
+        }
+    }
+
+    function sendMessage() {
+        const username = document.getElementById('username').value.trim() || 'Аноним';
+        const text = document.getElementById('chatText').value.trim();
+        
+        if (!text && !uploadedFileCache) return;
+
+        const messageData = {
+            username,
+            text: text || (uploadedFileCache ? uploadedFileCache.originalName : ''),
+            fileUrl: uploadedFileCache ? uploadedFileCache.fileUrl : null,
+            fileType: uploadedFileCache ? uploadedFileCache.fileType : null
+        };
+
+        socket.emit('chat_message', messageData);
+
+        document.getElementById('chatText').value = '';
+        document.getElementById('chatFile').value = '';
+        uploadedFileCache = null;
+        document.getElementById('fileStatus').textContent = '';
+    }
+
+    socket.on('init_messages', (messages) => {
+        const box = document.getElementById('chatBox');
+        box.innerHTML = '';
+        messages.forEach(appendMessage);
+        box.scrollTop = box.scrollHeight;
+    });
+
+    socket.on('chat_message', (msg) => {
+        appendMessage(msg);
+        const box = document.getElementById('chatBox');
+        box.scrollTop = box.scrollHeight;
+    });
+
+    function appendMessage(msg) {
+        const box = document.getElementById('chatBox');
+        let content = `<div class="chat-msg"><b>${escapeHtml(msg.username)}:</b> ${escapeHtml(msg.text || '')}`;
+        
+        if (msg.fileUrl) {
+            if (msg.fileType === 'image') {
+                content += `<br><img src="${msg.fileUrl}" style="max-width: 200px; border-radius: 6px; margin-top: 5px;">`;
+            } else if (msg.fileType === 'audio') {
+                content += `<br><audio controls src="${msg.fileUrl}" style="width: 100%; margin-top: 5px;"></audio>`;
+            } else if (msg.fileType === 'video') {
+                content += `<br><video controls src="${msg.fileUrl}" style="max-width: 250px; border-radius: 6px; margin-top: 5px;"></video>`;
+            } else {
+                content += `<br><a href="${msg.fileUrl}" target="_blank">📄 Скачать файл</a>`;
+            }
+        }
+        content += `</div>`;
+        box.innerHTML += content;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    loadStudents();
+</script>
+
+</body>
+</html>
